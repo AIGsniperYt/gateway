@@ -13,8 +13,7 @@ void setup() {
   sim800.begin(9600); // use this baud rate to talk to the sim800
 }
 
-// this is the function that runs continously
-void loop() {
+void sync_with_sim() {
     // is there data available from the serial monitor on your computer?
     // (basically, did you type and submit a command?)
     if (Serial.available()) {
@@ -27,4 +26,10 @@ void loop() {
         // write incoming data to serial monitor
         Serial.write(sim800.read());
     }
+}
+
+// this is the function that runs continously
+void loop() {
+    // abstract the bare bones translation syncer to keep loop clean
+    sync_with_sim();
 }
