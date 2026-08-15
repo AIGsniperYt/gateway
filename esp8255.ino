@@ -55,7 +55,11 @@ void setup() {
     // set baud rates here
     Serial.begin(115200); // nice and obvious, set baud rate to this for serial monitor from esp
     sim800.begin(9600); // use this baud rate to talk to the sim800
-    send_cmd("AT");
+    
+    // accept the returned string type response
+    String res = send_cmd("AT");
+    // print
+    Serial.println(res);
 }
 
 
