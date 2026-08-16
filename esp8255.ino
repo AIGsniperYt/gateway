@@ -91,7 +91,7 @@ void init_run_api() {
         if (!server.hasArg("cmd")) {
             // error 400 - bad request
             // syntax: (status code, content type, content)
-            server.send(400, "text/plain", "Missing cmd parameter");
+            server.send(400, "application/json", "{\"error\":\"Missing cmd parameter\"}");
             return;
         }
 
@@ -107,8 +107,10 @@ void init_run_api() {
         String res = send_cmd(cmd); // send it using our earlier helper function
         // and remember, we receive a response from the sim, store that in "res"
         
+        // convert to json for code purposes - might as well work with json instead of txt
+        String json = "{\"cmd\":\"" + cmd + "\",\"res\":\"" + res + "\"}";
         // return ok, txt, the response
-        server.send(200, "text/plain", res);
+        server.send(200, "application/json", res);
     });
 }
 
