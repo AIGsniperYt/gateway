@@ -49,7 +49,7 @@ String send_cmd(String cmd, uint16_t timeout = 2000) {
     // cus remember, .read() only does one byte at a time
     // so we need somewhere to store this data while its being build
 
-    println(cmd); // i want to see both the command and output in serial monitor
+    Serial.println(cmd); // i want to see both the command and output in serial monitor
     sim800.println(cmd);   // run the command
     unsigned long start = millis(); // basically in short, store current time
 
@@ -61,7 +61,7 @@ String send_cmd(String cmd, uint16_t timeout = 2000) {
         yield(); // keep ESP8266 alive, or watchdog timer resets chip apparently
     }
 
-    println(response); // i want to see both the command and output in serial monitor
+    Serial.println(response); // i want to see both the command and output in serial monitor
     return response;
 }
 
