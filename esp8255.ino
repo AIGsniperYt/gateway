@@ -97,6 +97,15 @@ void init_run_api() {
 
         // there is a cmd, great! - lets extract and run
         String cmd = server.arg("cmd"); // take the value of the "cmd" arg
+
+        // this is so i can have clean readable urls like "AT+CSQ" without errors 
+        // because the browser converts the + into a space, and sim errors at "AT CSQ"
+        // strip double quotes
+        cmd.replace("\"", "");
+
+        // strip single quotes
+        cmd.replace("'", "");
+
         String res = send_cmd(cmd); // send it using our earlier helper function
         // and remember, we receive a response from the sim, store that in "res"
         
