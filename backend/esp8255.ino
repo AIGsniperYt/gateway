@@ -110,7 +110,7 @@ void init_run_api() {
         // convert to json for code purposes - might as well work with json instead of txt
         String json = "{\"cmd\":\"" + cmd + "\",\"res\":\"" + res + "\"}";
         // return ok, txt, the response
-        server.send(200, "application/json", res);
+        server.send(200, "application/json", json);
     });
 }
 
