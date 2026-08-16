@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>SIM800 Web Terminal</title>
+    <title>SIM800 WebSocket Terminal</title>
 </head>
 <body>
-    <h1>SIM800 Web Terminal</h1>
+    <h2>SIM800 Terminal</h2>
 
-    <input id="cmdInput" placeholder="Enter AT command" style="width: 300px;">
-    <button id="sendBtn">Send</button>
+    <input id="cmdInput" placeholder="AT command">
+    <button onclick="sendCmd()">Send</button>
 
-    <pre id="log" style="margin-top: 20px; background: #111; color: #0f0; padding: 10px; height: 300px; overflow-y: auto;"></pre>
+    <pre id="log" style="background:#111;color:#0f0;padding:10px;height:300px;overflow-y:auto;"></pre>
 
     <script src="main.js"></script>
 </body>

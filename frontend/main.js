@@ -1,31 +1,24 @@
-const input = document.getElementById("cmdInput");
-const button = document.getElementById("sendBtn");
 const log = document.getElementById("log");
+const input = document.getElementById("cmdInput");
 
-function appendLog(line) {
+// CHANGE THIS TO YOUR ESP IP
+const ws = new WebSocket("ws://192.168.1.165/ws");
+
+ws.onopen = () => append("Connected to ESP WebSocket");
+ws.onmessage = (msg) => append(msg.data);
+ws.onerror = (err) => append("WebSocket error: " + err);
+ws.onclose = () => append("WebSocket closed");
+
+function append(line) {
     log.textContent += line + "\n";
     log.scrollTop = log.scrollHeight;
 }
 
-async function sendCmd() {
+function sendCmd() {
     const cmd = input.value.trim();
     if (!cmd) return;
 
-    appendLog("> " + cmd);
-
-    try {
-        const res = await fetch(`/run?cmd=${encodeURIComponent(cmd)}`);
-        const data = await res.json();
-        appendLog(data.res || "[no response]");
-    } catch (e) {
-        appendLog("[error] " + e.message);
-    }
-
+    append("> " + cmd);
+    ws.send(cmd);   // send raw AT command to ESP
     input.value = "";
 }
-
-button.addEventListener("click", sendCmd);
-
-input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendCmd();
-});
