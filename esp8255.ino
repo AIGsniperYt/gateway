@@ -100,11 +100,9 @@ void init_run_api() {
 
         // this is so i can have clean readable urls like "AT+CSQ" without errors 
         // because the browser converts the + into a space, and sim errors at "AT CSQ"
-        // strip double quotes
-        cmd.replace("\"", "");
-
-        // strip single quotes
-        cmd.replace("'", "");
+        cmd.replace("\"", ""); // strip double quotes
+        cmd.replace(" ", "+"); // unconvert browser + -> space
+        cmd.replace("'", ""); // strip single quotes
 
         String res = send_cmd(cmd); // send it using our earlier helper function
         // and remember, we receive a response from the sim, store that in "res"
