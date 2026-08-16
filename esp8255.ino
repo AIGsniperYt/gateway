@@ -112,10 +112,6 @@ void setup() {
     Serial.begin(115200); // nice and obvious, set baud rate to this for serial monitor from esp
     sim800.begin(9600); // use this baud rate to talk to the sim800
     
-    // accept the returned string type response
-    String res = send_cmd("AT");
-    // print
-    Serial.println(res);
     connect_to_wifi(); // start wifi
     init_run_api(); // we should declare the endpoint beforehand i think
     server.begin(); // crap i forgot to actually start the server
