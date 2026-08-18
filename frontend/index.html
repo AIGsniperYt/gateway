@@ -275,6 +275,87 @@
             border: 2px solid var(--term-bg);
         }
         ::-webkit-scrollbar-thumb:hover { background: #33405c; }
+
+        /* ---- sms ---- */
+
+        .sms-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .sms-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sms-box-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        #smsNumber,
+        #smsText {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 8px 10px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        #smsNumber:focus,
+        #smsText:focus { border-color: var(--accent); }
+        #smsText { min-height: 120px; resize: vertical; }
+        .sms-actions { display: flex; align-items: center; gap: 10px; }
+        #smsStatus { font-size: 12px; color: var(--muted); }
+        .sms-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .sms-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+        .sms-item .sms-item-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .sms-item .sms-item-sender { color: var(--accent); }
+        .sms-item .sms-item-body {
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .sms-item .sms-item-actions {
+            margin-top: 6px;
+            display: flex;
+            gap: 8px;
+        }
+        .sms-read {
+            margin-top: 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
     </style>
 </head>
 <body>
@@ -284,6 +365,7 @@
             <nav class="tabs">
                 <button class="tab active" data-tab="terminal">Terminal</button>
                 <button class="tab" data-tab="dashboard">Dashboard</button>
+                <button class="tab" data-tab="sms">SMS</button>
             </nav>
             <div id="status" class="status">connecting</div>
         </div>
@@ -307,6 +389,28 @@
                     <button id="refreshBtn" class="btn">Refresh</button>
                 </div>
                 <div class="dash-grid" id="dash-grid"></div>
+            </section>
+
+            <section id="sms-panel" hidden>
+                <div class="sms-grid">
+                    <div class="sms-box">
+                        <div class="sms-box-title">Compose</div>
+                        <input id="smsNumber" placeholder="phone number" autocomplete="off" spellcheck="false">
+                        <textarea id="smsText" placeholder="message text"></textarea>
+                        <div class="sms-actions">
+                            <button id="smsSendBtn" class="btn">Send SMS</button>
+                            <span id="smsStatus"></span>
+                        </div>
+                    </div>
+                    <div class="sms-box">
+                        <div class="sms-box-title">
+                            Inbox
+                            <button id="smsRefreshBtn" class="btn">Refresh</button>
+                        </div>
+                        <div id="smsList" class="sms-list"></div>
+                    </div>
+                </div>
+                <div class="sms-read" id="smsReadPane" hidden></div>
             </section>
         </div>
     </div>
