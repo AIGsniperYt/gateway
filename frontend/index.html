@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIM800 Terminal</title>
+    <title>SIM800</title>
     <style>
         :root {
             --bg: #0b0e14;
@@ -356,16 +356,96 @@
             border-radius: 10px;
             padding: 14px 16px;
         }
+
+        /* ---- calls ---- */
+
+        .call-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 18px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+        .call-display {
+            width: 100%;
+            text-align: center;
+            font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+            font-size: 24px;
+            color: var(--text);
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 48px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .call-dialpad {
+            display: grid;
+            grid-template-columns: repeat(3, 64px);
+            gap: 10px;
+        }
+        .pad-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--panel-border);
+            color: var(--text);
+            font-size: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .pad-btn:hover {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .call-actions,
+        .call-tools {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #callDialBtn {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #06210f;
+            font-weight: 600;
+        }
+        #callDialBtn:hover { background: #2fd77c; }
+        #callHangupBtn {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        #callHangupBtn:hover {
+            background: rgba(248, 113, 113, 0.12);
+        }
+        #callStatusText {
+            min-height: 18px;
+            font-size: 13px;
+            color: var(--muted);
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div class="card">
         <div class="header">
-            <h1>SIM800 Terminal</h1>
+            <h1>SIM800 Frontend</h1>
             <nav class="tabs">
                 <button class="tab active" data-tab="terminal">Terminal</button>
                 <button class="tab" data-tab="dashboard">Dashboard</button>
                 <button class="tab" data-tab="sms">SMS</button>
+                <button class="tab" data-tab="calls">Calls</button>
             </nav>
             <div id="status" class="status">connecting</div>
         </div>
@@ -411,6 +491,24 @@
                     </div>
                 </div>
                 <div class="sms-read" id="smsReadPane" hidden></div>
+            </section>
+
+            <section id="call-panel" hidden>
+                <div class="call-box">
+                    <div class="call-display" id="callDisplay">—</div>
+                    <div class="call-dialpad" id="callDialpad"></div>
+                    <div class="call-actions">
+                        <button id="callDialBtn" class="btn">Dial</button>
+                        <button id="callAnswerBtn" class="btn">Answer</button>
+                        <button id="callHangupBtn" class="btn">Hang up</button>
+                    </div>
+                    <div class="call-tools">
+                        <button id="callBkspBtn" class="btn">Backspace</button>
+                        <button id="callClearBtn" class="btn">Clear</button>
+                        <button id="callStatusBtn" class="btn">Status</button>
+                    </div>
+                    <div id="callStatusText"></div>
+                </div>
             </section>
         </div>
     </div>

@@ -16,6 +16,16 @@ const smsStatus = document.getElementById("smsStatus");
 const smsRefreshBtn = document.getElementById("smsRefreshBtn");
 const smsList = document.getElementById("smsList");
 const smsReadPane = document.getElementById("smsReadPane");
+const callPanel = document.getElementById("call-panel");
+const callDisplay = document.getElementById("callDisplay");
+const callDialpad = document.getElementById("callDialpad");
+const callDialBtn = document.getElementById("callDialBtn");
+const callAnswerBtn = document.getElementById("callAnswerBtn");
+const callHangupBtn = document.getElementById("callHangupBtn");
+const callBkspBtn = document.getElementById("callBkspBtn");
+const callClearBtn = document.getElementById("callClearBtn");
+const callStatusBtn = document.getElementById("callStatusBtn");
+const callStatusText = document.getElementById("callStatusText");
 
 input.value = "AT"; // most commands start with AT
 
@@ -52,6 +62,7 @@ function switchTab(name) {
     terminalPanel.hidden = name !== "terminal";
     dashboardPanel.hidden = name !== "dashboard";
     smsPanel.hidden = name !== "sms";
+    callPanel.hidden = name !== "calls";
 }
 
 tabs.forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
@@ -339,6 +350,81 @@ async function sendSms() {
 }
 
 smsSendBtn.addEventListener("click", sendSms);
+
+// ---------- calls ----------
+
+let callNumber = "";
+
+function updateCallDisplay() {
+    callDisplay.textContent = callNumber || "—";
+}
+
+function setCallStatus(text) {
+    callStatusText.textContent = text;
+}
+
+function buildDialpad() {
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].forEach((d) => {
+        const b = document.createElement("button");
+        b.className = "pad-btn";
+        b.textContent = d;
+        b.addEventListener("click", () => {
+            callNumber += d;
+            updateCallDisplay();
+        });
+        callDialpad.appendChild(b);
+    });
+}
+
+const CALL_DIRS = { 0: "outgoing", 1: "incoming" };
+const CALL_STATS = { 0: "active", 1: "held", 2: "dialing", 3: "alerting", 4: "incoming", 5: "waiting" };
+
+function parseClcc(buffer) {
+    const m = buffer.match(/\+CLCC:\s*\d+,(\d),(\d),\d,\d,\d,"?([^",]*)"?,?\d*/);
+    if (!m) {
+        return /ERROR/.test(buffer) ? "no calls / error" : buffer.trim() || "no active calls";
+    }
+    const dir = CALL_DIRS[m[1]] || "?";
+    const stat = CALL_STATS[m[2]] || "?";
+    const num = m[3] || "unknown";
+    return dir + " · " + stat + " · " + num;
+}
+
+callBkspBtn.addEventListener("click", () => {
+    callNumber = callNumber.slice(0, -1);
+    updateCallDisplay();
+});
+
+callClearBtn.addEventListener("click", () => {
+    callNumber = "";
+    updateCallDisplay();
+});
+
+callDialBtn.addEventListener("click", async () => {
+    if (!callNumber) return;
+    setCallStatus("dialing " + callNumber + "...");
+    const r = await sendCommand("ATD" + callNumber + ";", { timeout: 3000 });
+    setCallStatus(/ERROR/.test(r.buffer) ? "dial failed" : "dialing " + callNumber);
+});
+
+callAnswerBtn.addEventListener("click", async () => {
+    setCallStatus("answering...");
+    await sendCommand("ATA", { timeout: 3000 });
+    setCallStatus("answered");
+});
+
+callHangupBtn.addEventListener("click", async () => {
+    setCallStatus("hanging up...");
+    await sendCommand("ATH", { timeout: 3000 });
+    setCallStatus("hung up");
+});
+
+callStatusBtn.addEventListener("click", async () => {
+    const r = await sendCommand("AT+CLCC", { timeout: 3000 });
+    setCallStatus(parseClcc(r.buffer));
+});
+
+buildDialpad();
 
 // ---------- terminal autocomplete ----------
 
