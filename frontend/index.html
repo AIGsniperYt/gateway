@@ -2,15 +2,200 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>SIM800 WebSocket Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIM800 Terminal</title>
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --panel: rgba(20, 24, 34, 0.85);
+            --panel-border: #232a3b;
+            --text: #d5dbe4;
+            --muted: #7a8294;
+            --accent: #38f88f;
+            --accent-dim: rgba(56, 248, 143, 0.15);
+            --term-bg: #06080d;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(1200px 500px at 80% -10%, rgba(56, 248, 143, 0.08), transparent 60%),
+                radial-gradient(900px 400px at 10% 110%, rgba(80, 120, 255, 0.07), transparent 60%),
+                var(--bg);
+            color: var(--text);
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 40px 16px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 760px;
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--panel-border);
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .header .status {
+            margin-left: auto;
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .body { padding: 16px 18px 20px; }
+
+        .terminal {
+            background: var(--term-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            height: min(520px, 68vh);
+        }
+
+        #log {
+            flex: 1;
+            min-height: 0;
+            margin: 0;
+            padding: 14px 16px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #c8d3e0;
+        }
+
+        #hint {
+            min-height: 17px;
+            padding: 0 16px 4px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .prompt-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-top: 1px solid var(--panel-border);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .prompt {
+            font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+            color: var(--accent);
+            font-size: 15px;
+            user-select: none;
+        }
+
+        #cmdInput {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+            font-size: 15px;
+            padding: 2px 0;
+            caret-color: var(--accent);
+        }
+        #cmdInput::placeholder { color: #4a5266; }
+
+        .wrap { position: relative; flex: 1; }
+
+        #dropdown {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: calc(100% + 8px);
+            background: #141926;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+            z-index: 10;
+        }
+
+        #dropdown .item {
+            padding: 7px 12px;
+            cursor: pointer;
+            font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+            font-size: 13px;
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+        }
+        #dropdown .item:hover { background: rgba(255, 255, 255, 0.05); }
+        #dropdown .item.selected { background: var(--accent-dim); }
+        #dropdown .item .cmd { color: var(--text); }
+        #dropdown .item .match { color: var(--accent); }
+        #dropdown .item .desc {
+            color: var(--muted);
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: #232a3b;
+            border-radius: 5px;
+            border: 2px solid var(--term-bg);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #33405c; }
+    </style>
 </head>
 <body>
-    <h2>SIM800 Terminal</h2>
-
-    <input id="cmdInput" placeholder="AT command">
-    <button onclick="sendCmd()">Send</button>
-
-    <pre id="log" style="background:#111;color:#0f0;padding:10px;height:300px;overflow-y:auto;"></pre>
+    <div class="card">
+        <div class="header">
+            <h1>SIM800 Terminal</h1>
+            <div class="status">esp8266</div>
+        </div>
+        <div class="body">
+            <div class="terminal">
+                <pre id="log"></pre>
+                <div id="hint"></div>
+                <div class="prompt-line">
+                    <span class="prompt">❯</span>
+                    <div class="wrap">
+                        <input id="cmdInput" placeholder="type an AT command" autocomplete="off" spellcheck="false">
+                        <div id="dropdown"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="main.js"></script>
 </body>
