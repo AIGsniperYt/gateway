@@ -45,15 +45,6 @@ tabs.forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)))
 
 // ---------- dashboard ----------
 
-const REG_STATES = {
-    "0": "Not registered",
-    "1": "Home network",
-    "2": "Searching",
-    "3": "Denied",
-    "4": "Unknown",
-    "5": "Roaming",
-};
-
 const DASHBOARD = [
     {
         id: "temp",
@@ -79,18 +70,19 @@ const DASHBOARD = [
         format: (m) => m[1],
     },
     {
-        id: "net",
-        title: "Network",
-        cmd: "AT+CREG?",
-        regex: /\+CREG:\s*\d,\s*(\d)/,
-        format: (m) => REG_STATES[m[1]] || m[1],
+        id: "battery",
+        title: "Battery",
+        cmd: "AT+CBC",
+        regex: /\+CBC:\s*\d,\s*(\d+),\s*(\d+)/,
+        format: (m) => m[1] + "% · " + (parseInt(m[2], 10) / 1000).toFixed(2) + "V",
+        bar: (m) => parseInt(m[1], 10),
     },
     {
-        id: "imei",
-        title: "IMEI",
-        cmd: "AT+CGSN",
-        regex: /(\d{15,16})/,
-        format: (m) => m[1],
+        id: "operator",
+        title: "Network Operator",
+        cmd: "AT+COPS?",
+        regex: /\+COPS:\s*\d,\s*\d,\s*"([^"]*)"/,
+        format: (m) => m[1] || "unknown",
     },
 ];
 
