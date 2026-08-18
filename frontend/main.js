@@ -2,16 +2,211 @@ const log = document.getElementById("log");
 const input = document.getElementById("cmdInput");
 const dropdown = document.getElementById("dropdown");
 const hint = document.getElementById("hint");
+const statusEl = document.getElementById("status");
+const tabs = document.querySelectorAll(".tab");
+const terminalPanel = document.getElementById("terminal-panel");
+const dashboardPanel = document.getElementById("dashboard-panel");
+const dashGrid = document.getElementById("dash-grid");
+const refreshBtn = document.getElementById("refreshBtn");
 
 input.value = "AT"; // most commands start with AT
 
 // CHANGE THIS TO YOUR ESP IP
 const ws = new WebSocket("ws://192.168.1.165/ws");
 
-ws.onopen = () => append("Connected to ESP WebSocket");
-ws.onmessage = (msg) => append(msg.data);
+ws.onopen = () => {
+    append("Connected to ESP WebSocket");
+    setStatus("connected");
+};
+ws.onmessage = (msg) => {
+    append(msg.data);
+    feedDashboard(msg.data);
+};
 ws.onerror = (err) => append("WebSocket error: " + err);
-ws.onclose = () => append("WebSocket closed");
+ws.onclose = () => {
+    append("WebSocket closed");
+    setStatus("disconnected");
+};
+
+function setStatus(state) {
+    statusEl.textContent = state;
+    statusEl.className = "status " + state;
+}
+
+// ---------- tabs ----------
+
+function switchTab(name) {
+    tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+    terminalPanel.hidden = name !== "terminal";
+    dashboardPanel.hidden = name !== "dashboard";
+}
+
+tabs.forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+
+// ---------- dashboard ----------
+
+const REG_STATES = {
+    "0": "Not registered",
+    "1": "Home network",
+    "2": "Searching",
+    "3": "Denied",
+    "4": "Unknown",
+    "5": "Roaming",
+};
+
+const DASHBOARD = [
+    {
+        id: "temp",
+        title: "Temperature",
+        cmd: "AT+CMTE?",
+        unit: "°C",
+        regex: /\+CMTE:\s*\d,\s*(-?[\d.]+)/,
+        format: (m) => m[1],
+    },
+    {
+        id: "signal",
+        title: "Signal Quality",
+        cmd: "AT+CSQ",
+        regex: /\+CSQ:\s*(\d+),\s*(\d+)/,
+        format: (m) => m[1] + "/31",
+        bar: (m) => Math.round((parseInt(m[1], 10) / 31) * 100),
+    },
+    {
+        id: "sim",
+        title: "SIM Status",
+        cmd: "AT+CPIN?",
+        regex: /\+CPIN:\s*(\w+)/,
+        format: (m) => m[1],
+    },
+    {
+        id: "net",
+        title: "Network",
+        cmd: "AT+CREG?",
+        regex: /\+CREG:\s*\d,\s*(\d)/,
+        format: (m) => REG_STATES[m[1]] || m[1],
+    },
+    {
+        id: "imei",
+        title: "IMEI",
+        cmd: "AT+CGSN",
+        regex: /(\d{15,16})/,
+        format: (m) => m[1],
+    },
+];
+
+let dashCurrent = null;
+let dashRunning = false;
+let refreshQueued = false;
+
+function buildDashboard() {
+    DASHBOARD.forEach((card) => {
+        const el = document.createElement("div");
+        el.className = "stat-card";
+        el.id = "card-" + card.id;
+
+        let barHtml = "";
+        if (card.bar) {
+            barHtml = '<div class="stat-bar"><div class="stat-bar-fill"></div></div>';
+        }
+
+        el.innerHTML =
+            '<div class="stat-title">' + card.title + "</div>" +
+            '<div class="stat-value">--</div>' +
+            barHtml +
+            '<div class="stat-sub">' + card.cmd + "</div>";
+
+        dashGrid.appendChild(el);
+    });
+}
+
+function updateCard(card, m, err) {
+    const el = document.getElementById("card-" + card.id);
+    const valEl = el.querySelector(".stat-value");
+    const subEl = el.querySelector(".stat-sub");
+
+    el.classList.remove("ok", "error");
+
+    if (m && card.format(m)) {
+        valEl.textContent = card.format(m) + (card.unit || "");
+        el.classList.add("ok");
+        const fill = el.querySelector(".stat-bar-fill");
+        if (fill && card.bar) fill.style.width = card.bar(m) + "%";
+    } else {
+        valEl.textContent = err || "--";
+        el.classList.add("error");
+    }
+    subEl.textContent = card.cmd + " · " + new Date().toLocaleTimeString();
+}
+
+// send one dashboard command over the ws and wait for its response
+function sendDashboard(card) {
+    return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+            if (dashCurrent && dashCurrent.card.id === card.id) {
+                const cur = dashCurrent;
+                dashCurrent = null;
+                updateCard(cur.card, null, "timeout");
+                cur.resolve();
+            }
+        }, 4000);
+
+        dashCurrent = { card, buffer: "", resolve, timeout };
+        ws.send(card.cmd);
+    });
+}
+
+// feed incoming ws lines to the pending dashboard command
+function feedDashboard(line) {
+    if (!dashCurrent) return;
+    dashCurrent.buffer += line;
+    const m = dashCurrent.buffer.match(dashCurrent.card.regex);
+    const done = m || /(^|\n)OK(\r?\n|$)/.test(dashCurrent.buffer) || /ERROR/.test(dashCurrent.buffer);
+
+    if (done) {
+        const cur = dashCurrent;
+        dashCurrent = null;
+        clearTimeout(cur.timeout);
+        updateCard(cur.card, m);
+        cur.resolve();
+    }
+}
+
+function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+async function dashCycle() {
+    if (ws.readyState !== WebSocket.OPEN) {
+        setTimeout(dashCycle, 2000);
+        return;
+    }
+    for (const card of DASHBOARD) {
+        await sendDashboard(card);
+        await sleep(500);
+    }
+    dashRunning = false;
+    if (refreshQueued) {
+        refreshQueued = false;
+        dashRunning = true;
+        dashCycle();
+    }
+}
+
+function pollDashboard() {
+    if (dashRunning) {
+        refreshQueued = true;
+        return;
+    }
+    dashRunning = true;
+    dashCycle();
+}
+
+buildDashboard();
+pollDashboard();
+
+refreshBtn.addEventListener("click", pollDashboard);
+
+// ---------- terminal autocomplete ----------
 
 const COMMANDS = [
     { cmd: "AT", desc: "test connection (should return OK)" },
