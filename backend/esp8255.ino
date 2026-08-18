@@ -22,35 +22,24 @@ SoftwareSerial sim800(4, 5); // RX=D2, TX=D1
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws"); // websocket endpoint at /ws
 
-
-// sync_with_sim: relay between serial monitor and sim800
-// basically lets you type into serial monitor and see sim800 replies
-void sync_with_sim() {
-    while (Serial.available()) {
-        sim800.write(Serial.read()); // forward PC serial input to sim800
-    }
-    while (sim800.available()) {
-        Serial.write(sim800.read()); // forward sim800 output to PC serial monitor
-    }
-}
-
+String wsBuffer = ""; // accumulates sim800 chars until a full line is received
 
 // send_cmd: helper to send AT command and collect response
 // returns the full response string
 String send_cmd(String cmd, uint16_t timeout = 2000) {
     String response = "";
-    Serial.println(cmd);       // echo command to serial monitor
     sim800.println(cmd);       // send command to sim800
     unsigned long start = millis();
 
     while (millis() - start < timeout) {
         while (sim800.available()) {
-            response += (char)sim800.read(); // build response byte by byte
+            char c = sim800.read();
+            Serial.write(c);   // raw echo to serial monitor
+            response += c;     // also build response string
         }
         yield(); // keep ESP8266 alive, avoid watchdog reset
     }
 
-    Serial.println(response); // echo response to serial monitor
     return response;
 }
 
@@ -124,12 +113,14 @@ void setup() {
 
 // loop: runs continuously
 void loop() {
-    // keep serial monitor and sim800 in sync
-    sync_with_sim();
-
-    // broadcast any sim800 output to websocket clients
+    // broadcast any sim800 output to websocket clients in real time
     while (sim800.available()) {
-        String res = sim800.readString();
-        ws.textAll(res);
+        char c = sim800.read();
+        Serial.write(c);          // show raw output in Serial Monitor
+        wsBuffer += c;            // buffer until full line
+        if (c == '\n') {          // then send the whole line as one message
+            ws.textAll(wsBuffer);
+            wsBuffer = "";
+        }
     }
 }
