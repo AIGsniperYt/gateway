@@ -1,0 +1,1 @@
+this directory is the old project for getting a web server working on an esp32, and the sim800 gsm module, this is deprecated because we've upgraded to use a a7670G lilygo esp and sim module
