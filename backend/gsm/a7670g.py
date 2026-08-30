@@ -15,7 +15,7 @@ import serial
 class A7670G:
     """Small synchronous interface to the SIMCom A7670G modem."""
 
-    def __init__(self, port="/dev/ttyUSB2", baudrate=115200):
+    def __init__(self, port="/dev/serial/by-id/usb-SIMCom_Wireless_Solution_A76XX_Series_LTE_Module_200806006809080000-if04-port0", baudrate=115200):
         self.port = port
         self.baudrate = baudrate
 
